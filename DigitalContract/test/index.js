@@ -79,13 +79,11 @@ orchestrator.registerScenario("Scenario1", async (s, t) => {
   t.ok(pub_contract_adrr.Ok);
   await s.consistency();
 
-
-
-
+  await show_entry(alice, pub_contract_adrr.Ok[0], "Public Contract");
 
   //// Bob is going to confirm contract
-  console.log("alice signed a contract?");
-  const is_valid_alice = await bob.call(
+  console.log("Bob signed a contract?");
+  const is_valid_bob = await bob.call(
     dna_name,
     zome_name,
     "is_public_contract_signed_by_me",
@@ -93,9 +91,9 @@ orchestrator.registerScenario("Scenario1", async (s, t) => {
       public_contract_address: pub_contract_adrr.Ok[0],
     }
   );
-  console.log("alice signed a contract?");
-  console.log(is_valid_alice);
-  t.ok(is_valid_alice.Ok);
+  console.log("Bob signed a contract?");
+  console.log(is_valid_bob);
+  t.true(is_valid_bob.Ok == false); // bob did not sign the contract, why it return true?
 
 
 

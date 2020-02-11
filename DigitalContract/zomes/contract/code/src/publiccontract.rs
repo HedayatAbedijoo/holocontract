@@ -82,26 +82,10 @@ pub fn is_signed_by_me(public_contract_address: Address) -> ZomeApiResult<bool> 
         hdk::verify_signature(provenance.clone(), public_contract_address.clone())?;
 
     if !validate_signature {
-        //return Err("Error: You did not sign this contract".to_string());
         return Err(ZomeApiError::from(String::from(
             "Error: You did not sign this contract",
         )));
     } else {
         Ok(true)
     }
-    // let entry = hdk::get_entry(&pub_addr_contract).unwrap().unwrap();
-    // let signature = hdk::sign(pub_addr_contract.clone())?;
-    // let my_provenance = Provenance::new(AGENT_ADDRESS.clone(), Signature::from(signature));
-    // let options = CommitEntryOptions::new(vec![my_provenance]);
-    // let address = hdk::commit_entry_result(&entry, options)?;
-    // Ok(address.address())
-
-    // let provenance = Provenance::new(sender_address.clone(), Signature::from(msg.signature));
-    // let validate_signature =
-    //     hdk::verify_signature(provenance.clone(), msg.public_contract_address.clone())?;
-    // if !validate_signature {
-    //     return Err(
-    //         "Error: Message signature is not equal to public contract signature".to_string(),
-    //     );
-    // }
 }
