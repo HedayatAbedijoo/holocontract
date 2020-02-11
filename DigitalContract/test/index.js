@@ -80,27 +80,67 @@ orchestrator.registerScenario("Scenario1", async (s, t) => {
   await s.consistency();
 
 
+
+
+
   //// Bob is going to confirm contract
-  const pub_contract_confirm_by_bob = await bob.call(
+  console.log("alice signed a contract?");
+  const is_valid_alice = await bob.call(
     dna_name,
     zome_name,
-    "confirm_contract",
+    "is_public_contract_signed_by_me",
     {
-      title: "First contract",
-      body: "the body of contract",
-      public_contract_address: pub_contract_adrr.Ok,
-      timestamp: 654
+      public_contract_address: pub_contract_adrr.Ok[0],
     }
   );
+  console.log("alice signed a contract?");
+  console.log(is_valid_alice);
+  t.ok(is_valid_alice.Ok);
 
-  await s.consistency();
-  t.ok(pub_contract_confirm_by_bob.Ok);
 
-  await s.consistency();
 
-  await show_entry(alice, pub_contract_adrr.Ok, "_show_public_again");
 
-  await show_entry(alice, pub_contract_confirm_by_bob.Ok[0], "_bob_private_entry");
+
+
+  // await s.consistency();
+  // t.ok(pub_contract_confirm_by_bob.Ok);
+
+  // await s.consistency();
+
+  // await show_entry(alice, pub_contract_adrr.Ok, "Show public from Alice return");
+
+  // await show_entry(bob, pub_contract_confirm_by_bob.Ok[0], "_bob_private_entry");
+  // await show_entry(bob, pub_contract_confirm_by_bob.Ok[1], "Show public after bob Signed");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   // /// Get private entry and check

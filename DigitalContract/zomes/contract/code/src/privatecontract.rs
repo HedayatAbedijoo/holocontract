@@ -94,7 +94,7 @@ pub fn create(
     contract_body: String,
     contractor_address: Address,
     timestamp: usize,
-) -> ZomeApiResult<Address> {
+) -> ZomeApiResult<Vec<Address>> {
     let contract = Contract::new(title, contract_body);
 
     let public_contract_address = crate::publiccontract::create(
@@ -115,12 +115,13 @@ pub fn create(
     let private_contract_entry = private_contect.entry();
     let _private_entry_address = hdk::commit_entry(&private_contract_entry)?;
 
+    let address = sign_public_contract(public_contract_address.clone())?;
     message::send_contract(
         contractor_address,
         public_contract_address.clone(),
         contract.clone(),
     )?;
-    Ok(public_contract_address)
+    Ok(vec![public_contract_address, address])
 }
 
 pub fn confirm(

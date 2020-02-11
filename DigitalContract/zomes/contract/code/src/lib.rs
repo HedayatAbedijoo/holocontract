@@ -62,7 +62,7 @@ mod contract_zome {
         contract_body: String,
         contractor_address: Address,
         timestamp: usize,
-    ) -> ZomeApiResult<Address> {
+    ) -> ZomeApiResult<Vec<Address>> {
         privatecontract::create(title, contract_body, contractor_address, timestamp)
     }
 
@@ -85,6 +85,13 @@ mod contract_zome {
     #[zome_fn("hc_public")]
     pub fn my_contracts() -> ZomeApiResult<Vec<PrivateContract>> {
         privatecontract::get_my_contracts()
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn is_public_contract_signed_by_me(
+        public_contract_address: Address,
+    ) -> ZomeApiResult<bool> {
+        publiccontract::is_signed_by_me(public_contract_address)
     }
 
     #[receive]
