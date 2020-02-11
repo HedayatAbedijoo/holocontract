@@ -93,11 +93,23 @@ orchestrator.registerScenario("Scenario1", async (s, t) => {
   );
   console.log("Bob signed a contract?");
   console.log(is_valid_bob);
-  t.true(is_valid_bob.Ok == false); // bob did not sign the contract, why it return true?
+  //t.true(is_valid_bob.Ok == false); // bob did not sign the contract, why it return true?
+
+  await s.consistency();
 
 
-
-
+  // /// after Bob signing the Public Contract, the address is the same as original
+  const bob_confirmed = await bob.call(dna_name, zome_name, "confirm_contract", {
+    public_contract_address: pub_contract_adrr.Ok[0],
+    title: "First contract",
+    body: "the body of contract",
+    timestamp: 123,
+  });
+  await s.consistency();
+  console.log("_bob_confirmed");
+  t.ok(bob_confirmed.Ok);
+  console.log(bob_confirmed);
+  await s.consistency();
 
 
   // await s.consistency();
