@@ -46,6 +46,18 @@ const conductorConfig = Config.gen(
 );
 
 
+async function show_entry(caller, address, title) {
+  console.log("<<<<<<<<<<<<<<<  " + title + "  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+  const result =
+    await caller.call(dna_name, zome_name, "get_entry", {
+      address: address
+
+    });
+
+  //console.log(title);
+  console.log(result);
+  console.log("<End>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+}
 orchestrator.registerScenario("Scenario1", async (s, t) => {
   const { alice, bob } = await s.players(
     { alice: conductorConfig, bob: conductorConfig },
@@ -62,20 +74,48 @@ orchestrator.registerScenario("Scenario1", async (s, t) => {
       timestamp: 123
     }
   );
-  console.log("_this_is_me_create_result");
+  console.log("_alice_created_public_contract");
   console.log(pub_contract_adrr);
   t.ok(pub_contract_adrr.Ok);
   await s.consistency();
 
-  /// Get private entry and check
-  const new_contr_pub = await alice.call(dna_name, zome_name, "get_entry", {
-    address: pub_contract_adrr.Ok
-  });
+
+  //// Bob is going to confirm contract
+  const pub_contract_confirm_by_bob = await bob.call(
+    dna_name,
+    zome_name,
+    "confirm_contract",
+    {
+      title: "First contract",
+      body: "the body of contract",
+      public_contract_address: pub_contract_adrr.Ok,
+      timestamp: 654
+    }
+  );
+
+  await s.consistency();
+  t.ok(pub_contract_confirm_by_bob.Ok);
+
   await s.consistency();
 
-  console.log("_result");
-  const contract = JSON.parse(new_contr_pub.Ok.App[1]);
-  console.log(contract);
+  await show_entry(alice, pub_contract_adrr.Ok, "_show_public_again");
+
+  await show_entry(alice, pub_contract_confirm_by_bob.Ok[0], "_bob_private_entry");
+
+
+  // /// Get private entry and check
+  // const public_contract = await alice.call(dna_name, zome_name, "get_entry", {
+  //   address: pub_contract_adrr.Ok
+  // });
+  // await s.consistency();
+  // console.log("_public_contract");
+  // t.ok(public_contract.Ok);
+  // console.log(public_contract);
+  // await s.consistency();
+
+  // console.log("_alice_private_contract");
+  // const contract = JSON.parse(new_contr_pub.Ok.App[1]);
+  // console.log(contract);
   // t.deepEqual(contract, {
   //   title: "First contract",
   //   timestamp: 123,

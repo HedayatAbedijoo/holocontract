@@ -4,8 +4,8 @@ use multihash::{encode, Hash};
 
 #[derive(Serialize, Deserialize, Debug, DefaultJson, Clone)]
 pub struct Contract {
-    title: String,
-    body: String,
+    pub title: String,
+    pub body: String,
 }
 
 impl Contract {

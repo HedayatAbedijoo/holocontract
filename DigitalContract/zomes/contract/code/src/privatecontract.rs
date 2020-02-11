@@ -10,15 +10,19 @@
 use hdk::prelude::*;
 use holochain_wasm_utils::api_serialization::query::QueryArgsNames;
 
-use crate::contract::Contract;
+use crate::contract::*;
 use crate::message;
-use crate::publiccontract;
+use crate::publiccontract::PublicContract;
 use hdk::holochain_core_types::dna::entry_types::Sharing;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::{entry_definition::ValidatingEntryType, AGENT_ADDRESS};
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
     holochain_core_types::entry::Entry,
+    holochain_core_types::{
+        signature::{Provenance, Signature},
+        time::Timeout,
+    },
     holochain_persistence_api::cas::content::Address,
 };
 use hdk_proc_macros::zome;
@@ -93,7 +97,7 @@ pub fn create(
 ) -> ZomeApiResult<Address> {
     let contract = Contract::new(title, contract_body);
 
-    let public_contract_address = publiccontract::create(
+    let public_contract_address = crate::publiccontract::create(
         contract.clone(),
         AGENT_ADDRESS.to_string().into(),
         contractor_address.clone(),
@@ -117,6 +121,35 @@ pub fn create(
         contract.clone(),
     )?;
     Ok(public_contract_address)
+}
+
+pub fn confirm(
+    public_contract_address: Address,
+    contr: Contract,
+    timestamp: usize,
+) -> ZomeApiResult<Vec<Address>> {
+    let pub_contr: PublicContract = hdk::utils::get_as_type(public_contract_address.clone())?;
+    let priv_contr = PrivateContract::new(
+        contr,
+        pub_contr.starter_address,
+        AGENT_ADDRESS.to_string().into(),
+        public_contract_address.clone(),
+        timestamp,
+    );
+    let priv_entry = priv_contr.entry();
+    let private_entry_address = hdk::commit_entry(&priv_entry)?;
+    let address = sign_public_contract(public_contract_address)?;
+
+    Ok(vec![private_entry_address, address])
+}
+
+fn sign_public_contract(pub_addr_contract: Address) -> ZomeApiResult<Address> {
+    let entry = hdk::get_entry(&pub_addr_contract).unwrap().unwrap();
+    let signature = hdk::sign(pub_addr_contract.clone())?;
+    let my_provenance = Provenance::new(AGENT_ADDRESS.clone(), Signature::from(signature));
+    let options = CommitEntryOptions::new(vec![my_provenance]);
+    let address = hdk::commit_entry_result(&entry, options)?;
+    Ok(address.address())
 }
 
 // Get all private contracts of the current Agent

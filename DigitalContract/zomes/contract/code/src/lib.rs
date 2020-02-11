@@ -67,6 +67,17 @@ mod contract_zome {
     }
 
     #[zome_fn("hc_public")]
+    pub fn confirm_contract(
+        public_contract_address: Address,
+        title: String,
+        body: String,
+        timestamp: usize,
+    ) -> ZomeApiResult<Vec<Address>> {
+        let contr = contract::Contract::new(title, body);
+        privatecontract::confirm(public_contract_address, contr, timestamp)
+    }
+
+    #[zome_fn("hc_public")]
     fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
         hdk::get_entry(&address)
     }
