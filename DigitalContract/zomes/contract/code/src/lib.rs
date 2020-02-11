@@ -1,0 +1,93 @@
+/***************** Required Library */
+#![feature(vec_remove_item)]
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![feature(proc_macro_hygiene)]
+#[macro_use]
+extern crate hdk;
+extern crate hdk_proc_macros;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+#[macro_use]
+extern crate holochain_json_derive;
+
+use hdk::prelude::*;
+use std::convert::TryInto;
+
+use hdk::holochain_json_api::json::JsonString;
+//use hdk::holochain_json_api::{error::JsonError, json::JsonString};
+use hdk::holochain_persistence_api::cas::content::Address;
+//use hdk::prelude::JsonString;
+use hdk::AGENT_ADDRESS;
+use hdk_proc_macros::zome;
+use holochain_wasm_utils::api_serialization::query::QueryArgsNames;
+
+//use std::convert::TryInto;
+extern crate multihash;
+/******************************** */
+
+pub mod contract;
+mod message;
+mod privatecontract;
+mod publiccontract;
+use crate::message::MessageBody;
+use crate::privatecontract::PrivateContract;
+#[zome]
+mod contract_zome {
+
+    #[init]
+    fn init() {
+        Ok(())
+    }
+
+    #[validate_agent]
+    pub fn validate_agent(validate_data: EntryValidationData<AgentId>) {
+        Ok(())
+    }
+    #[entry_def]
+    fn public_contract_entry() -> ValidatingEntryType {
+        publiccontract::publiccontract_entry_definition()
+    }
+
+    #[entry_def]
+    fn private_contract_entry() -> ValidatingEntryType {
+        privatecontract::privatecontract_entry_definition()
+    }
+
+    #[zome_fn("hc_public")]
+    fn create_contract(
+        title: String,
+        contract_body: String,
+        contractor_address: Address,
+        timestamp: usize,
+    ) -> ZomeApiResult<Address> {
+        privatecontract::create(title, contract_body, contractor_address, timestamp)
+    }
+
+    #[zome_fn("hc_public")]
+    fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
+        hdk::get_entry(&address)
+    }
+
+    #[zome_fn("hc_public")]
+    pub fn my_contracts() -> ZomeApiResult<Vec<PrivateContract>> {
+        privatecontract::get_my_contracts()
+    }
+
+    #[receive]
+    pub fn receive(address: Address, msg: JsonString) -> String {
+        let success: Result<MessageBody, _> = JsonString::from_json(&msg).try_into();
+        match success {
+            Err(err) => format!("Error: {}", err),
+            Ok(result) => match message::validate_received_message(address, result) {
+                Ok(_) => "Message received sucessfully".to_string(), //String::from("Error : It is OK  _hedi"),
+                Err(err) => format!(
+                    "Error: there was an error validating the transaction: {}",
+                    err
+                ),
+            },
+        }
+    }
+}
