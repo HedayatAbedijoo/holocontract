@@ -12,19 +12,13 @@ extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate holochain_json_derive;
-
-use hdk::prelude::*;
-use std::convert::TryInto;
-
 use hdk::holochain_json_api::json::JsonString;
-//use hdk::holochain_json_api::{error::JsonError, json::JsonString};
 use hdk::holochain_persistence_api::cas::content::Address;
-//use hdk::prelude::JsonString;
+use hdk::prelude::*;
 use hdk::AGENT_ADDRESS;
 use hdk_proc_macros::zome;
 use holochain_wasm_utils::api_serialization::query::QueryArgsNames;
-
-//use std::convert::TryInto;
+use std::convert::TryInto;
 extern crate multihash;
 /******************************** */
 
@@ -100,11 +94,8 @@ mod contract_zome {
         match success {
             Err(err) => format!("Error: {}", err),
             Ok(result) => match message::validate_received_message(address, result) {
-                Ok(_) => "Message received sucessfully".to_string(), //String::from("Error : It is OK  _hedi"),
-                Err(err) => format!(
-                    "Error: there was an error validating the transaction: {}",
-                    err
-                ),
+                Ok(_) => "OK: Message received sucessfully".to_string(),
+                Err(err) => format!("Error: there was an error validating the contract: {}", err),
             },
         }
     }

@@ -24,7 +24,6 @@ pub fn send_contract(
     contract: Contract,
 ) -> Result<(), String> {
     let signature = hdk::sign(pub_addr_contract.clone())?;
-    //let fake_contract = Contract::new("title: String".to_string(), "body: String".to_string()); // sending fake contract to test
     let message = MessageBody {
         contract: contract,
         signature: signature,

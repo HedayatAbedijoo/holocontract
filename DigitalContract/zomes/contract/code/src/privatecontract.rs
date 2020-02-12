@@ -1,20 +1,9 @@
-// use hdk::holochain_json_api::{error::JsonError, json::JsonString};
-// use hdk::holochain_persistence_api::cas::content::Address;
-// use hdk::prelude::*;
-// use hdk::{
-//     entry_definition::ValidatingEntryType,
-//     error::{ZomeApiError, ZomeApiResult},
-//     AGENT_ADDRESS,
-// };
-// use std::convert::TryFrom;
-use hdk::prelude::*;
-use holochain_wasm_utils::api_serialization::query::QueryArgsNames;
-
 use crate::contract::*;
 use crate::message;
 use crate::publiccontract::PublicContract;
 use hdk::holochain_core_types::dna::entry_types::Sharing;
 use hdk::holochain_json_api::{error::JsonError, json::JsonString};
+use hdk::prelude::*;
 use hdk::{entry_definition::ValidatingEntryType, AGENT_ADDRESS};
 use hdk::{
     error::{ZomeApiError, ZomeApiResult},
@@ -26,6 +15,7 @@ use hdk::{
     holochain_persistence_api::cas::content::Address,
 };
 use hdk_proc_macros::zome;
+use holochain_wasm_utils::api_serialization::query::QueryArgsNames;
 use std::convert::TryFrom;
 
 #[derive(Serialize, Deserialize, Debug, self::DefaultJson, Clone)]
@@ -33,7 +23,7 @@ pub struct PrivateContract {
     pub contract: Contract,
     pub starter_address: Address,         // agent who start the contract
     pub contractor_address: Address,      // another party of contract
-    pub public_contract_address: Address, // the address of Hash on DHT
+    pub public_contract_address: Address, // the address of Public Contract on DHT with the Hash of contract, to stop any modification of source of contract
     pub timestamp: usize,
 }
 
@@ -73,6 +63,18 @@ impl PrivateContract {
     pub fn entry(&self) -> Entry {
         Entry::App("privatecontract".into(), self.into())
     }
+
+    pub fn validate_on_modify(&self, new_entry: &PrivateContract) -> Result<(), String> {
+        if self.contract.get_hash() != new_entry.contract.get_hash()
+            || self.contractor_address != new_entry.contractor_address
+            || self.timestamp != self.timestamp
+            || self.public_contract_address != self.public_contract_address
+            || self.starter_address != self.starter_address
+        {
+            return Err("Error: You can not change any element of contract".to_string());
+        }
+        Ok(())
+    }
 }
 
 pub fn privatecontract_entry_definition() -> ValidatingEntryType {
@@ -83,8 +85,34 @@ pub fn privatecontract_entry_definition() -> ValidatingEntryType {
         validation_package:||{
             hdk::ValidationPackageDefinition::Entry
         },
-        validation:|_validation_data: hdk::EntryValidationData<PrivateContract>|{
-            Ok(())
+        validation:|validation_data: hdk::EntryValidationData<PrivateContract>|{
+            match validation_data{
+                EntryValidationData::Create { entry, validation_data } => {
+                    if !validation_data.sources().contains(&entry.starter_address) {
+                        return Err(String::from("Error: You just can create a contract for yourself"));
+                    }
+                    if validation_data.sources().contains(&entry.contractor_address) {
+                        return Err(String::from("Error: Contracter of contract is signed it now. it is not possible."));
+                    }
+
+                    if entry.contract.title.is_empty() == true ||
+                    entry.contract.body.is_empty() == true
+                    {
+                        return Err(String::from("Error: title or body can not be empty"));
+                    }
+                     let public_contract = hdk::get_entry(&entry.public_contract_address);
+                     match public_contract{
+                         Ok(_)=>  Ok(()),
+                         _ =>  Err("Error: public contract related to this contract is not exist".to_string())
+                     }
+                },
+                EntryValidationData::Modify { .. } => {
+                   return Err("Error: You can not modify contract".to_string());
+                },
+                EntryValidationData::Delete {.. } => {
+                  return  Err("Error: You can not delete a public contract".to_string());
+                }
+            }
         }
     )
 }
