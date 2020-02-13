@@ -1,5 +1,5 @@
 
-# Digital Contracts on Holochain
+# Digital Contract on Holochain
 
 ## Using this app Alice and Bob can sign a digital contract which is reliable and nobody can tamper it.
 
