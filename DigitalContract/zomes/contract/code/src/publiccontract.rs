@@ -91,10 +91,22 @@ pub fn publiccontract_entry_definition() -> ValidatingEntryType {
                     Err(String::from("Error: You can not delete a public contract"))
                 }
             }
-        }
+        },
+        links: [
+            to!( // to query all my public contracts
+                "%agent_id",
+                link_type: "agent->publiccontracts",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::Entry
+                },
+                validation: | _validation_data: hdk::LinkValidationData | {
+                    Ok(())
+                }
+            )
+        ]
     )
 }
-
+// this functino is a starter of process. Agent who wants to start a contract will call this.
 pub fn create(
     contract: Contract,
     starter_contract: Address,
@@ -103,6 +115,7 @@ pub fn create(
 ) -> ZomeApiResult<Address> {
     let hash_of_contract = contract.get_hash();
 
+    // create a Public contract with a Hash of all contract body and title
     let new_public_contract = PublicContract::new(
         hash_of_contract,
         starter_contract,
@@ -111,10 +124,15 @@ pub fn create(
     );
     let public_contract_entry = new_public_contract.entry();
     let pub_cont_addr = hdk::commit_entry(&public_contract_entry)?;
+    // create a link between my agent to public contract for query and search
+    hdk::link_entries(&AGENT_ADDRESS, &pub_cont_addr, "agent->publiccontracts", "")?;
 
     Ok(pub_cont_addr)
 }
 
+// We need a validation to see a claimed public contract is already signed by me. which mean did I accept this contract
+// TODO: later: we need full cycle validation. we need to find private contract connected to public contract.Err
+// we need to validate the Hash of private contract with a Hash of connected public contract
 pub fn is_signed_by_me(public_contract_address: Address) -> ZomeApiResult<bool> {
     let signature = hdk::sign(public_contract_address.clone())?;
     let provenance = Provenance::new(AGENT_ADDRESS.clone(), Signature::from(signature));

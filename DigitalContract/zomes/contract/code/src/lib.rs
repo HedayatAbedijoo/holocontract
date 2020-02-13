@@ -1,3 +1,16 @@
+/* Digital Contract
+
+Using this app Alice and Bob can sign a digital contract which is reliable and nobody can tamper it.
+Alice want to sign a contract with Bob:
+Alice create a PublicContract entry with Hash of contract, and contractor address
+Alice create a PrivateContract with the body and title of contract and link it to PublicContract
+Bob will receive a direct message from Alice, with the full body of contract and address of PublicContract
+Bob validate the received message by Hash of received contract and Hash of Public contract.
+Bob can reject the contract and stop process. so Public contract is not beign signed by him.
+Bob can accept the contract. So he creates a private contract and Sign the public contract with the same hash of his contract.
+
+*/
+
 /***************** Required Library */
 #![feature(vec_remove_item)]
 #![allow(dead_code)]
@@ -50,6 +63,7 @@ mod contract_zome {
         privatecontract::privatecontract_entry_definition()
     }
 
+    // Start of process. this is function should be called by starter of the process. Anyboy who want to create a new contract
     #[zome_fn("hc_public")]
     fn create_contract(
         title: String,
@@ -60,6 +74,7 @@ mod contract_zome {
         privatecontract::create(title, contract_body, contractor_address, timestamp)
     }
 
+    // second party of contract(contractor), should call this method if he wants to accept the contract which sent to him
     #[zome_fn("hc_public")]
     pub fn confirm_contract(
         public_contract_address: Address,
@@ -71,16 +86,19 @@ mod contract_zome {
         privatecontract::confirm(public_contract_address, contr, timestamp)
     }
 
+    // General function to retreive any entry by address
     #[zome_fn("hc_public")]
     fn get_entry(address: Address) -> ZomeApiResult<Option<Entry>> {
         hdk::get_entry(&address)
     }
 
+    // List of all my private contracts. then we need to query relative public contract from DHT from UI. the address of Public Contract is inside PrivateContract
     #[zome_fn("hc_public")]
     pub fn my_contracts() -> ZomeApiResult<Vec<PrivateContract>> {
         privatecontract::get_my_contracts()
     }
 
+    // It is validating if an Agent accepted a contract or not.
     #[zome_fn("hc_public")]
     pub fn is_public_contract_signed_by_me(
         public_contract_address: Address,
@@ -88,6 +106,8 @@ mod contract_zome {
         publiccontract::is_signed_by_me(public_contract_address)
     }
 
+    // This is a receiver function on Peer-to-Peer communication.
+    // TODO: this function should send an event to UI. then UI shows a windows to user with the info of contract with 2 buttons: 1)Accept 2)Reject
     #[receive]
     pub fn receive(address: Address, msg: JsonString) -> String {
         let success: Result<MessageBody, _> = JsonString::from_json(&msg).try_into();

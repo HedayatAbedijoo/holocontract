@@ -18,6 +18,7 @@ pub struct MessageBody {
     pub public_contract_address: Address,
 }
 
+// Direct communication between parties. When Alice create a new Contract with Bob. a direct message should be sent to Bob
 pub fn send_contract(
     receiver_addrs: Address,
     pub_addr_contract: Address,
@@ -45,6 +46,7 @@ pub fn send_contract(
     }
 }
 
+// When a receiver, receives a new direct message, which is a new contract. we need to evaluate it.
 pub fn validate_received_message(sender_address: Address, msg: MessageBody) -> Result<(), String> {
     let pub_contr: PublicContract = hdk::utils::get_as_type(msg.public_contract_address.clone())?;
     // Validate Sender with Public Contract

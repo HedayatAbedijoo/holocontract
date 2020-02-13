@@ -113,7 +113,19 @@ pub fn privatecontract_entry_definition() -> ValidatingEntryType {
                   return  Err("Error: You can not delete a public contract".to_string());
                 }
             }
-        }
+        },
+        links: [
+            to!( // to query all my private contracts
+                "%agent_id",
+                link_type: "agent->privatecontracts",
+                validation_package: || {
+                    hdk::ValidationPackageDefinition::Entry
+                },
+                validation: | _validation_data: hdk::LinkValidationData | {
+                    Ok(())
+                }
+            )
+        ]
     )
 }
 
@@ -141,7 +153,13 @@ pub fn create(
     );
 
     let private_contract_entry = private_contect.entry();
-    let _private_entry_address = hdk::commit_entry(&private_contract_entry)?;
+    let private_entry_address = hdk::commit_entry(&private_contract_entry)?;
+    hdk::link_entries(
+        &AGENT_ADDRESS,
+        &private_entry_address,
+        "agent->privatecontracts",
+        "",
+    )?;
 
     let address = sign_public_contract(public_contract_address.clone())?;
     message::send_contract(
@@ -158,6 +176,13 @@ pub fn confirm(
     timestamp: usize,
 ) -> ZomeApiResult<Vec<Address>> {
     let pub_contr: PublicContract = hdk::utils::get_as_type(public_contract_address.clone())?;
+    // the contract you want to confirm should be equal as the relevant Public contract
+    if pub_contr.contract_hash != contr.get_hash() {
+        return Err(ZomeApiError::from(String::from(
+            "Error: the contract you want to confirm is not the same as Public contract",
+        )));
+    }
+    //Create a private contract for me
     let priv_contr = PrivateContract::new(
         contr,
         pub_contr.starter_address,
@@ -167,11 +192,28 @@ pub fn confirm(
     );
     let priv_entry = priv_contr.entry();
     let private_entry_address = hdk::commit_entry(&priv_entry)?;
-    let address = sign_public_contract(public_contract_address)?;
+    // Create a link between my agent to private contract
+    hdk::link_entries(
+        &AGENT_ADDRESS,
+        &private_entry_address,
+        "agent->privatecontracts",
+        "",
+    )?;
 
+    // Sign the public cantract, which mean you accepted the contract
+    let address = sign_public_contract(public_contract_address.clone())?;
+    // create a link beween your agent and public contract for search and query
+    hdk::link_entries(
+        &AGENT_ADDRESS,
+        &public_contract_address,
+        "agent->publiccontracts",
+        "",
+    )?;
+    //TODO: return should be changed later. they are just for testing.
     Ok(vec![private_entry_address, address])
 }
 
+// Each party of contract should sign the public contract. means both side accepted the contract
 fn sign_public_contract(pub_addr_contract: Address) -> ZomeApiResult<Address> {
     let entry = hdk::get_entry(&pub_addr_contract).unwrap().unwrap();
     let signature = hdk::sign(pub_addr_contract.clone())?;
