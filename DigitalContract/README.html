@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Digital Contracts on Holochain</title>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="digital-contracts-on-holochain">Digital Contracts on Holochain</h1>
+<h2 id="using-this-app-alice-and-bob-can-sign-a-digital-contract-which-is-reliable-and-nobody-can-tamper-it">Using this app Alice and Bob can sign a digital contract which is reliable and nobody can tamper it.</h2>
+<h3 id="example-alice-wants-to-sign-a-contract-with-bob">Example: Alice wants to sign a contract with Bob:</h3>
+<ul>
+<li>Alice create a Public-Contract entry on DHT with the Hash of contract plus contractor address.</li>
+<li>Then Alice create a Private-Contract on her local-chain with the body and title of contract with a link to the Public-Contract address.</li>
+<li>Then Alice send a direct message to Bob with the full content of the contract and the address of Public-Contract on DHT.</li>
+<li>Bob will receive a direct message from Alice, and validate the received message by comparing Hash of Public-Contract with Hash of contract he received directly from Alice.</li>
+<li>Then Bob can reject the contract and stop the process. Which means the Public-Contract on DHT is not being signed by him.</li>
+<li>Or Bob can accept the contract. So he creates a new Private-Contract on his local-chain and Sign the public contract on DHT.</li>
+</ul>
+<pre><code class="language-rust"><div>
+<span class="hljs-keyword">pub</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Contract</span></span> {
+    <span class="hljs-keyword">pub</span> title: <span class="hljs-built_in">String</span>,
+    <span class="hljs-keyword">pub</span> body: <span class="hljs-built_in">String</span>,
+}
+
+<span class="hljs-comment">// This entry save on DHT</span>
+<span class="hljs-keyword">pub</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">PublicContract</span></span> {
+    <span class="hljs-keyword">pub</span> contract_hash: <span class="hljs-built_in">String</span>,       <span class="hljs-comment">// Hash of the whole contract. so nobody can have different version of contract</span>
+    <span class="hljs-keyword">pub</span> starter_address: Address,    <span class="hljs-comment">// agent who start the contract. Alice public key</span>
+    <span class="hljs-keyword">pub</span> contractor_address: Address, <span class="hljs-comment">// another party of contract. Bob public key</span>
+    <span class="hljs-keyword">pub</span> timestamp: <span class="hljs-built_in">usize</span>,
+}
+
+<span class="hljs-comment">// This entry just save on Local-chain of each agent. not on the DHT</span>
+<span class="hljs-keyword">pub</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">PrivateContract</span></span> {
+    <span class="hljs-keyword">pub</span> contract: Contract,                <span class="hljs-comment">// full version of contract that each party save on his local-chain</span>
+    <span class="hljs-keyword">pub</span> starter_address: Address,         <span class="hljs-comment">// agent who start the contract. Alice public key</span>
+    <span class="hljs-keyword">pub</span> contractor_address: Address,      <span class="hljs-comment">// another party of contract. Bob public key</span>
+    <span class="hljs-keyword">pub</span> public_contract_address: Address, <span class="hljs-comment">// the address of Public Contract on DHT</span>
+    <span class="hljs-keyword">pub</span> timestamp: <span class="hljs-built_in">usize</span>,
+}
+</div></code></pre>
+<h3 id="validation-rules-of-holochain-application-stops-any-party-to-change-public-contract-so-it-will-be-tamper-proof-digital-contract">Validation rules of Holochain application stops any party to change Public-Contract so it will be tamper proof Digital Contract.</h3>
+
+    </body>
+    </html>
