@@ -38,3 +38,5 @@ pub struct PrivateContract {
 ```
 
 ### Validation rules of Holochain application stops any party to change Public-Contract so it will be tamper proof Digital Contract.
+
+#### it is under development and not finished
