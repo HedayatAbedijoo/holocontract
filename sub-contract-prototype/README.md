@@ -6,6 +6,7 @@ After finishing multi-signature Digital-Contract, the fake-contract should be re
 ## how the things are working?
 Alice as a provider can create some contents. Then Bob wants to subscribe to Alice's Content. If he wants to ask Alice for the content, he just need to send Contract-Address and his Signature. Then based on the type of contract, Alice send back his private data based on the level of permission of Bob.
 
-Bob: subscribes as "silver-membership"
+Bob: subscribes as "silver-membership": using this contract Bob can just access to Blogs.
 
-Tom: subscribes as "gold-membership"
+Tom: subscribes as "gold-membership": using this contract Tom can access to Blogs and comments.
+
