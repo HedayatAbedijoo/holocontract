@@ -95,10 +95,9 @@ pub mod provider_zome {
     }
 
     #[zome_fn("hc_public")]
-    fn get_subscription_blogs(
-        contract_address: Address,
-        signature: String,
-    ) -> ZomeApiResult<String> {
+    fn get_subscription_blogs(contract_address: Address) -> ZomeApiResult<String> {
+        let signature = hdk::sign(contract_address.clone())?;
+
         let pub_contr: Contract = hdk::utils::get_as_type(contract_address.clone())?;
 
         contract::is_subs_valid(
@@ -106,18 +105,13 @@ pub mod provider_zome {
             pub_contr.subscriber.clone(),
             signature.clone(),
         )?;
-
-        // return Ok(vec![Content::new(
-        //     format!("{}{}", contract_address, signature),
-        //     [].to_vec(),
-        // )]);
         let message = MessageBody::new(
             contract_address.clone(),
             signature.clone(),
             pub_contr.subscriber,
         );
 
-        // Send direct message asking for private data for a subscription
+        // Send direct message asking for private data of provider for a subscription
         let result = hdk::send(
             pub_contr.provider,
             JsonString::from(message).to_string(),
@@ -125,14 +119,6 @@ pub mod provider_zome {
         )?;
 
         return Ok(result);
-        // return Ok(vec![Content::new(
-        //     format!("{}{}", contract_address, signature),
-        //     [].to_vec(),
-        // )]);
-
-        // //let success: Result<Vec<Content>, _> = JsonString::from_json(&result).try_into();
-        // let success: Vec<Content> = serde_json::from_str(&result).unwrap();
-        // Ok(success)
     }
 
     #[receive]

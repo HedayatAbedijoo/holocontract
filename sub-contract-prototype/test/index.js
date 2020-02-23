@@ -90,7 +90,7 @@ orchestrator.registerScenario("Scenario1", async (s, t) => {
   log(alice_content_2_addr.Ok, "alice_content_2_addr");
 
 
-  //START TEST SECTION///////////////////////////////////////// Alice gets 2 blogs
+  //START TEST SECTION///////////////////////////////////////// Alice gets 2 blogs. She is a provider 
   const alice_contents = await alice.call(
     dna_subscription,
     zome_provider,
@@ -106,7 +106,7 @@ orchestrator.registerScenario("Scenario1", async (s, t) => {
   await s.consistency();
 
 
-  //START TEST SECTION///////////////////////////////////////// Bob gets 0 blogs
+  //START TEST SECTION///////////////////////////////////////// Bob gets 0 blogs, because he is not a provider
   const bob_contents = await bob.call(
     dna_subscription,
     zome_provider,
@@ -120,135 +120,95 @@ orchestrator.registerScenario("Scenario1", async (s, t) => {
 
 
   //START TEST SECTION///////////////////////////////////////// Bob wants to Subscribe to Alice contents as Silver-Membership 
-  //// Notice: This implementation of Digital-Contact is just Fake. 
-  //   These steps will be replaced by real Digital-Content working version. it should be one zome call, with some internal direct messaging
 
-  // 1- Alice create a contract for Bob
-  const bob_sub_contract_addr = await alice.call(
-    dna_subscription,
-    zome_contract,
-    "create_subscribe_contract",
-    {
-      subscriber: bob.instance(dna_subscription).agentAddress,
-      contract_type: "silver-membership",
-    }
-  );
-  await s.consistency();
-  log(bob_sub_contract_addr.Ok, "Bob subscription public address");
-  t.ok(bob_sub_contract_addr.Ok);
-
-  // 2- Bob will get the signature for the contract
-  const bob_signature = await bob.call(
-    dna_subscription,
-    zome_contract,
-    "get_my_signature",
-    {
-      entry_address: bob_sub_contract_addr.Ok,
-    }
-  );
-  await s.consistency();
-  log(bob_signature.Ok, "Bob Signature");
-  t.ok(bob_signature.Ok);
-
-  // 3- Bob sign the contract by his signature
-  const bob_signed = await bob.call(
-    dna_subscription,
-    zome_contract,
-    "sign_contract_by_subscriber",
-    {
-      contract_address: bob_sub_contract_addr.Ok,
-      signature: bob_signature.Ok
-    }
-  );
-  await s.consistency();
-  log(bob_signed.Ok, "Bob Signed the contract");
-  t.ok(bob_signed.Ok);
-
-  //START TEST SECTION///////////////////////////////////////// Bob wants to get data from provider(Alice) using his contract(subscription) 
+  const bob_subscribtion = await fake_contract(alice, bob, "silver-membership", s, t);
   const bob_subscription_content = await bob.call(
     dna_subscription,
     zome_provider,
     "get_subscription_blogs",
     {
-      contract_address: bob_sub_contract_addr.Ok,
-      signature: bob_signature.Ok,
+      contract_address: bob_subscribtion
     }
   );
   await s.consistency();
   log(bob_subscription_content.Ok, "bob_subscription_content");
   t.ok(bob_subscription_content.Ok);
-
-
-
-
-
-
-
-
-
-
-
-
-  //START TEST SECTION///////////////////////////////////////// Tom wants to Subscribe to Alice contents as Gold-Membership 
-  // 1- Alice create a contract for Tom
-  const tom_sub_contract_addr = await alice.call(
-    dna_subscription,
-    zome_contract,
-    "create_subscribe_contract",
-    {
-      subscriber: tom.instance(dna_subscription).agentAddress,
-      contract_type: "gold-membership",
-    }
+  const result_bob_contents = JSON.parse(bob_subscription_content.Ok);
+  // Bob has Siver-Membership so, he can not accesst to Comments 
+  t.deepEqual(result_bob_contents,
+    { Ok: [{ blog: 'my blog 2', comments: [] }, { blog: 'my blog 1', comments: [] }] }
   );
-  await s.consistency();
-  log(tom_sub_contract_addr.Ok, "Tom subscription public address");
-  t.ok(tom_sub_contract_addr.Ok);
 
-  // 2- Tom will get the signature for the contract
-  const tom_signature = await tom.call(
-    dna_subscription,
-    zome_contract,
-    "get_my_signature",
-    {
-      entry_address: tom_sub_contract_addr.Ok,
-    }
-  );
-  await s.consistency();
-  log(tom_signature.Ok, "Tom Signature");
-  t.ok(tom_signature.Ok);
-
-  // 3- Tom sign the contract by his signature
-  const tom_signed = await tom.call(
-    dna_subscription,
-    zome_contract,
-    "sign_contract_by_subscriber",
-    {
-      contract_address: tom_sub_contract_addr.Ok,
-      signature: tom_signature.Ok
-    }
-  );
-  await s.consistency();
-  log(tom_signed.Ok, "Tom Signed the contract");
-  t.ok(tom_signed.Ok);
-
-  //START TEST SECTION///////////////////////////////////////// Tom wants to get data from provider(Alice) using his contract(subscription) 
+  //START TEST SECTION///////////////////////////////////////// Tom subscribe himself with gold-membership permission 
+  const tom_subscribtion = await fake_contract(alice, tom, "gold-membership", s, t);
   const tom_subscription_content = await tom.call(
     dna_subscription,
     zome_provider,
     "get_subscription_blogs",
     {
-      contract_address: tom_sub_contract_addr.Ok,
-      signature: tom_signature.Ok,
+      contract_address: tom_subscribtion
     }
   );
   await s.consistency();
   log(tom_subscription_content.Ok, "tom_subscription_content");
   t.ok(tom_subscription_content.Ok);
 
+  const result_tom_contents = JSON.parse(tom_subscription_content.Ok);
+  // Bob has Gold-Membership so, he can accesst to all data 
+  t.deepEqual(result_tom_contents,
+    { Ok: [{ blog: 'my blog 2', comments: ['comment 2-1', 'comment2-2'] }, { blog: 'my blog 1', comments: ['comment 1-1', 'comment1-2'] }] }
+  );
 
 });
 
+//// Notice: This implementation of Digital-Contact is just Fake. 
+//   These steps will be replaced by real Digital-Content working version. it should be one zome call, with some internal direct messaging
+async function fake_contract(provider_caller, subscriber_caller, subscription_type, s, t) {
 
+  //START TEST SECTION///////////////////////////////////////// X wants to Subscribe to Alice contents as Gold-Membership 
+  // 1- Alice create a contract for X
+  const sub_contract_addr = await provider_caller.call(
+    dna_subscription,
+    zome_contract,
+    "create_subscribe_contract",
+    {
+      subscriber: subscriber_caller.instance(dna_subscription).agentAddress,
+      contract_type: subscription_type,
+    }
+  );
+  await s.consistency();
+  log(sub_contract_addr.Ok, "X subscription public address");
+  t.ok(sub_contract_addr.Ok);
 
+  // 2- Tom will get the signature for the contract
+  const signature = await subscriber_caller.call(
+    dna_subscription,
+    zome_contract,
+    "get_my_signature",
+    {
+      entry_address: sub_contract_addr.Ok,
+    }
+  );
+  await s.consistency();
+  log(sub_contract_addr.Ok, "X Signature");
+  t.ok(sub_contract_addr.Ok);
+
+  // 3- Tom sign the contract by his signature
+  const signed = await subscriber_caller.call(
+    dna_subscription,
+    zome_contract,
+    "sign_contract_by_subscriber",
+    {
+      contract_address: sub_contract_addr.Ok,
+      signature: signature.Ok
+    }
+  );
+  await s.consistency();
+  log(signed.Ok, "X Signed the contract");
+  t.ok(signed.Ok);
+  log(sub_contract_addr.Ok, "X subscription contract");
+
+  return sub_contract_addr.Ok;
+}
 
 orchestrator.run();
